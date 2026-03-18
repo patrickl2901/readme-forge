@@ -78,19 +78,8 @@ export function useReadmeStream(options?: UseReadmeStreamOptions): UseReadmeStre
         if (done || abortControllerRef.current?.signal.aborted) break
 
         const chunk = decoder.decode(value, { stream: true })
-
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('0:')) {
-            try {
-              const text = JSON.parse(line.slice(2))
-              accumulated += text
-              setMarkdown(accumulated)
-            } catch {
-              // Skip malformed JSON
-            }
-          }
-        }
+        accumulated += chunk
+        setMarkdown(accumulated)
       }
 
       if (!abortControllerRef.current?.signal.aborted) {
