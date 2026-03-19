@@ -1,6 +1,7 @@
 import { google } from '@ai-sdk/google'
 import { streamText } from 'ai'
 import { NextResponse } from 'next/server'
+import { rateLimit, getClientIP, rateLimitResponse } from '@/lib/rate-limit'
 
 const TEMPLATE_PROMPTS = {
   minimal: `Create a minimalist README with only the essential sections: Title, Description, Installation, and Usage. No badges, no fluff. Keep it under 300 words.`,
@@ -49,6 +50,13 @@ Use a clean, organized structure with proper markdown formatting.`,
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIP(request)
+  const { success, reset } = rateLimit(ip, 10, 60000)
+
+  if (!success) {
+    return rateLimitResponse(reset)
+  }
+
   try {
     const body = await request.json()
     const { repoData, template = 'modern' } = body

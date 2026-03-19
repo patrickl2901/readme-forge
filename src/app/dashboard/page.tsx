@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 import { createBrowserClient } from '@/lib/supabase-browser'
-import { Plus, ExternalLink, Trash2, RefreshCw, FileText, Loader2, Sparkles } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, RefreshCw, FileText, Loader2, Sparkles, AlertTriangle } from 'lucide-react'
+import { Toaster, toast } from 'sonner'
 
 interface ReadmeRecord {
   id: string
@@ -17,6 +18,7 @@ interface ReadmeRecord {
 
 export default function DashboardPage() {
   const [readmes, setReadmes] = useState<ReadmeRecord[] | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -38,7 +40,16 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      setReadmes(error ? [] : (data || []))
+      if (error) {
+        setFetchError('Failed to load your READMEs. Please try again.')
+        toast.error('Failed to load READMEs', {
+          description: error.message,
+        })
+        setReadmes([])
+      } else {
+        setFetchError(null)
+        setReadmes(data || [])
+      }
     }
     
     fetchData()
@@ -55,10 +66,16 @@ export default function DashboardPage() {
       .delete()
       .eq('id', id)
 
-    if (!error && readmes) {
+    setDeleting(null)
+
+    if (error) {
+      toast.error('Failed to delete README', {
+        description: error.message,
+      })
+    } else if (readmes) {
+      toast.success('README deleted')
       setReadmes(readmes.filter(r => r.id !== id))
     }
-    setDeleting(null)
   }
 
   const formatDate = (dateString: string) => {
@@ -80,6 +97,7 @@ export default function DashboardPage() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+      <Toaster position="top-right" richColors closeButton />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100">My READMEs</h1>
@@ -97,7 +115,18 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {readmes.length === 0 ? (
+      {fetchError && (
+        <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              {fetchError}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {readmes.length === 0 && !fetchError ? (
         <div className="text-center py-20 px-4">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 flex items-center justify-center mx-auto mb-6">
             <FileText className="w-10 h-10 text-emerald-500" />

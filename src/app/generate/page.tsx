@@ -313,6 +313,7 @@ export default function GeneratorPage() {
   const saveToDatabase = async (generatedMarkdown: string) => {
     if (!user || !repoData) return
 
+    // @ts-expect-error Supabase type inference limitation with custom Database types
     const { error } = await supabase.from('readmes').insert({
       user_id: user.id,
       repo_url: repoData.repoUrl,
@@ -323,8 +324,8 @@ export default function GeneratorPage() {
         stars: repoData.stars,
         languages: repoData.languages,
         techStack: repoData.techStack,
-      }
-    } as never)
+      },
+    })
 
     if (!error) {
       setSaved(true)

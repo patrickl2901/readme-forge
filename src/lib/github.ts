@@ -13,6 +13,10 @@ export interface RepoData {
   defaultBranch: string
 }
 
+function isValidGitHubName(name: string): boolean {
+  return /^[a-zA-Z0-9._-]+$/.test(name) && name.length <= 100
+}
+
 function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   const patterns = [
     /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/?$/,
@@ -23,7 +27,11 @@ function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   for (const pattern of patterns) {
     const match = url.match(pattern)
     if (match) {
-      return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
+      const owner = match[1]
+      const repo = match[2].replace(/\.git$/, '')
+      if (isValidGitHubName(owner) && isValidGitHubName(repo)) {
+        return { owner, repo }
+      }
     }
   }
   return null
